@@ -29,11 +29,10 @@ A Python 3.4 based GUI application for downloading streaming files from Bandcamp
 
 #### Source
 - Grab the source
-
-
-## Dependencies 
-- PyQt4
-- mutagen
-- wgetter
+ 
+ Dependencies For Source   
+    - PyQt4
+    - mutagen
+    - wgetter
 
 
