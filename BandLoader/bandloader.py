@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import json
+import string
 import platform
 import subprocess
 import urllib.request
@@ -13,7 +14,6 @@ from mutagen.id3 import APIC
 from mutagen.easyid3 import EasyID3
 
 
-# scrape the websites HTML
 def get_html_data(query, source, brackets=False):
     """
     Scrapes Bandcamp site for query
@@ -32,18 +32,27 @@ def get_html_data(query, source, brackets=False):
         sys.exit(0)
 
 
-# get the track titles from scraped HTML and save it to a list
 def get_track_titles(tracks):
     """
     Gets track titles and appends it to a new
     list, returns list
 
+    Also fixes the track titles and removes any invalid file names that it may have
+
+    For example chars such as *, /, ?
+    are removed from the name, so that when it saves the mp3
+    file we dont get an error
+
     :param tracks:
     :return:
     """
     track_t = []
+    valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
     for track in tracks:
+        valid_track_name = track['title']
+        track['title'] = ''.join(c for c in valid_track_name if c in valid_chars)
         track_t.append(track['title'])
+
     return track_t
 
 
@@ -71,7 +80,7 @@ def create_dir(directory, album_title):
     :param album_title: title of the album (folder name)
     :return: file_path
     """
-    file_path = directory + "\\" + "Bandloader Downloads" + "\\" + album_title + "\\"
+    file_path = directory + "\\" + album_title + "\\"
     print(file_path)
 
     if not os.path.exists(file_path):
@@ -94,17 +103,20 @@ def collect_album_info(url):
     site_source = tmp_site.read().decode('utf-8')
     tmp_site.close()
     album_data = {}
+    valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
     album_data['track_info'] = get_html_data('trackinfo', site_source, True)
     album_data['track_titles'] = get_track_titles(album_data['track_info'])
     album_data['artist'] = get_html_data("artist", site_source).replace('"', '')
+    album_data['artist'] = ''.join(c for c in album_data['artist'] if c in valid_chars)
     album_data['title'] = get_html_data("album_title", site_source).replace('"', '')
+    album_data['title'] = ''.join(c for c in album_data['title'] if c in valid_chars)
     album_data['release_date'] = get_html_data("release_date", site_source).replace('"', '')
     album_data['cover_url'] = get_html_data("artFullsizeUrl", site_source).replace('"', '')
     album_data['release_date'] = fix_release_date(album_data['release_date'])
     return album_data
 
 
-def download_tracks(track_info, track_titles, directory):
+def download_tracks(track_info, track_title, directory):
     """
     Downloads the track that was sent to it
     Skips over tracks that have alread been downloaded
@@ -115,23 +127,26 @@ def download_tracks(track_info, track_titles, directory):
     :return:
     """
     print("Downloading....")
-    # gets the track download urls from
-    # track_info then downlads
-    download_url = track_info['file']['mp3-128']
-    # downloads the mp3 from url, creates
-    # a temporary file in the directory
-    tmp_file = wgetter.download(download_url, outdir=directory)
-    # create the file name with path and .mp3
-    file_name = directory + "\\" + track_titles + ".mp3"
-    # if file already exists, we skip that file and delete the tmp_file
-    if os.path.isfile(file_name):
-        print("Skipping file: " + file_name + " already exists.")
-        pass
+    # If we cant find the URL to download skip MP3
+    if not track_info['file']:
+        print("error")
+        return track_title
     else:
-        # replace the name of tmp_file with
-        # track title and .mp3
-        os.rename(tmp_file, file_name)
-        print("\nDone downloading track\n")
+        download_url = track_info['file']['mp3-128']
+        # downloads the mp3 from url, creates
+        # a temporary file in the directory
+        tmp_file = wgetter.download(download_url, outdir=directory)
+        # create the file name with path and .mp3
+        file_name = directory + "\\" + track_title + ".mp3"
+        # if file already exists, we skip that file and delete the tmp_file
+        if os.path.isfile(file_name):
+            print("Skipping file: " + file_name + " already exists.")
+            pass
+        else:
+            # replace the name of tmp_file with
+            # track title and .mp3
+            os.rename(tmp_file, file_name)
+            print("\nDone downloading track\n")
 
 
 def download_album_cover(album_cover, directory):

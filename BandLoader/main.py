@@ -90,6 +90,30 @@ class MainUiClass(QtGui.QMainWindow, bandloader_gui.Ui_MainWindow):
                                                               'save files')
         self.dir_edit.setText(self.usr_dir)
 
+    def disable_buttons(self):
+        """
+        Disables button when downloading
+
+        :return:
+        """
+        self.download_button.setEnabled(False)
+        self.dir_edit.setEnabled(False)
+        self.url_edit.setEnabled(False)
+        self.dir_button.setEnabled(False)
+        self.clear_button.setEnabled(False)
+
+    def enable_buttons(self):
+        """
+        Enables buttons again when done downloading
+
+        :return:
+        """
+        self.download_button.setEnabled(True)
+        self.dir_edit.setEnabled(True)
+        self.url_edit.setEnabled(True)
+        self.dir_button.setEnabled(True)
+        self.clear_button.setEnabled(True)
+
     def begin_download(self):
         i = 0
         url = str(self.url_edit.text())
@@ -99,21 +123,35 @@ class MainUiClass(QtGui.QMainWindow, bandloader_gui.Ui_MainWindow):
             self.display_error(error=1)
         elif "/album/" not in url:
             self.display_error(error=2)
+        else:
+            self.disable_buttons()
+            self.album = bandloader.collect_album_info(url)
+            self.final_dir = bandloader.create_dir(file_dir, self.album['title'])
+            self.progress_label.setText("Downloading songs... This takes a bit.")
+            self.d_thread = DownloadThread(album_data=self.album, directory=self.final_dir)
+            self.connect(self.d_thread, QtCore.SIGNAL('PROGRESS'), self.update_progress_bar)
+            self.connect(self.d_thread, QtCore.SIGNAL('THREAD DONE'), self.finish_up)
+            self.connect(self.d_thread, QtCore.SIGNAL('REMOVE TRACK'), self.delete_track)
+            # Start download thread
+            self.d_thread.start()
 
-        self.album = bandloader.collect_album_info(url)
-        self.final_dir = bandloader.create_dir(file_dir, self.album['title'])
-        self.progress_label.setText("Downloading songs... This takes a bit.")
-        self.d_thread = DownloadThread(album_data=self.album, directory=self.final_dir)
-        self.connect(self.d_thread, QtCore.SIGNAL('PROGRESS'), self.update_progress_bar)
-        self.connect(self.d_thread, QtCore.SIGNAL('THREAD DONE'), self.finish_up)
-        # Start download thread
-        self.d_thread.start()
+            # Check to see if we have a url to download the album cover with
+            if not self.album['cover_url']:
+                QtGui.QMessageBox.about(self, "Dang!", "No album cover found\n"
+                                                       "Continuing...")
+                self.cover_url = -1
 
-        # Check to see if we have a url to download the album cover with
-        if not self.album['cover_url']:
-            QtGui.QMessageBox.about(self, "Dang!", "No album cover found\n"
-                                                   "Continuing...")
-            self.cover_url = -1
+    def delete_track(self, trck_to_remove):
+        """
+        Removes tracks that arent available for
+        download.
+
+        For encodiing purposes
+
+        :param trck_to_remove:
+        :return:
+        """
+        self.album['track_titles'].remove(trck_to_remove)
 
     def finish_up(self):
         """
@@ -144,6 +182,7 @@ class MainUiClass(QtGui.QMainWindow, bandloader_gui.Ui_MainWindow):
         QtGui.QMessageBox.about(self, "Done", "Done downloading & encoding!\n"
                                               "Remember, please support the Artists")
         self.progress_label.setText("Done!")
+        self.enable_buttons()
         bandloader.open_file_path(self.final_dir)
 
     @staticmethod
@@ -185,8 +224,9 @@ class DownloadThread(QtCore.QThread):
         for track in self.album_info['track_info']:
             perc += 1
             self.emit(QtCore.SIGNAL('PROGRESS'), perc)
-            bandloader.download_tracks(track, self.album_info['track_titles'][i],
-                                       self.directory)
+            to_rmv = bandloader.download_tracks(track, self.album_info['track_titles'][i],
+                                                self.directory)
+            self.emit(QtCore.SIGNAL('REMOVE TRACK'), to_rmv)
             i += 1
 
         self.emit(QtCore.SIGNAL('THREAD DONE'))
