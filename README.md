@@ -15,7 +15,7 @@ A Python 3.4 based GUI application for downloading streaming files from Bandcamp
 </ul>
 
 ## Application
-![image](https://puu.sh/kogY9/e3e4ff4892.jpg)
+![image](https://puu.sh/kohjc/5698bfc308.jpg)
 
 ## Downloads
 
