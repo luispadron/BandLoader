@@ -92,13 +92,15 @@ def create_dir(directory, album_title):
 
 def collect_album_info(url):
     """
-    Collects information by crawiling through the website
+    Collects information by crawling through the website
     stores information into album_data dictionary and then
     returns information
 
     :param url:
     :return album_data:
     """
+    i = 0
+    no_links = []
     tmp_site = urllib.request.urlopen(url)
     site_source = tmp_site.read().decode('utf-8')
     tmp_site.close()
@@ -106,6 +108,25 @@ def collect_album_info(url):
     valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
     album_data['track_info'] = get_html_data('trackinfo', site_source, True)
     album_data['track_titles'] = get_track_titles(album_data['track_info'])
+    num_of_tracks = len(album_data['track_titles'])
+
+    # Checks the list of tracks for links, if we dont find the links remove them
+    # Replace title with a empty string
+    for track in album_data['track_titles']:
+        if not album_data['track_info'][i]['file']:
+            no_links.append(track)
+            album_data['track_titles'][i] = ''
+        i += 1
+    # Remove links for tracks that dont have download links
+    while num_of_tracks > 0:
+        if not album_data['track_info'][num_of_tracks - 1]['file']:
+            album_data['track_info'].pop(num_of_tracks - 1)
+        num_of_tracks -= 1
+
+    # Delete empty strings, helps with download time and errors when downloading
+    while '' in album_data['track_titles']:
+        album_data['track_titles'].remove('')
+
     album_data['artist'] = get_html_data("artist", site_source).replace('"', '')
     album_data['artist'] = ''.join(c for c in album_data['artist'] if c in valid_chars)
     album_data['title'] = get_html_data("album_title", site_source).replace('"', '')
@@ -113,40 +134,34 @@ def collect_album_info(url):
     album_data['release_date'] = get_html_data("release_date", site_source).replace('"', '')
     album_data['cover_url'] = get_html_data("artFullsizeUrl", site_source).replace('"', '')
     album_data['release_date'] = fix_release_date(album_data['release_date'])
-    return album_data
+    return album_data, no_links
 
 
 def download_tracks(track_info, track_title, directory):
     """
     Downloads the track that was sent to it
-    Skips over tracks that have alread been downloaded
+    Skips over tracks that have already been downloaded
 
     :param track_info:
-    :param track_titles:
+    :param track_title:
     :param directory:
     :return:
     """
-    print("Downloading....")
-    # If we cant find the URL to download skip MP3
-    if not track_info['file']:
-        print("error")
-        return track_title
+    download_url = track_info['file']['mp3-128']
+    # downloads the mp3 from url, creates
+    # a temporary file in the directory
+    tmp_file = wgetter.download(download_url, outdir=directory)
+    # create the file name with path and .mp3
+    file_name = directory + "\\" + track_title + ".mp3"
+    # if file already exists, we skip that file and delete the tmp_file
+    if os.path.isfile(file_name):
+        print("Skipping file: " + file_name + " already exists.")
+        pass
     else:
-        download_url = track_info['file']['mp3-128']
-        # downloads the mp3 from url, creates
-        # a temporary file in the directory
-        tmp_file = wgetter.download(download_url, outdir=directory)
-        # create the file name with path and .mp3
-        file_name = directory + "\\" + track_title + ".mp3"
-        # if file already exists, we skip that file and delete the tmp_file
-        if os.path.isfile(file_name):
-            print("Skipping file: " + file_name + " already exists.")
-            pass
-        else:
-            # replace the name of tmp_file with
-            # track title and .mp3
-            os.rename(tmp_file, file_name)
-            print("\nDone downloading track\n")
+        # replace the name of tmp_file with
+        # track title and .mp3
+        os.rename(tmp_file, file_name)
+        print("\nDone downloading track\n")
 
 
 def download_album_cover(album_cover, directory):
