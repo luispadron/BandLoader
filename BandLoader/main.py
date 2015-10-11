@@ -4,7 +4,7 @@ from PyQt4 import QtGui
 from PyQt4 import QtCore
 
 import bandloader_gui
-import bandloader
+from bandloader import BandLoader
 
 
 class MainUiClass(QtGui.QMainWindow, bandloader_gui.Ui_MainWindow):
@@ -33,7 +33,7 @@ class MainUiClass(QtGui.QMainWindow, bandloader_gui.Ui_MainWindow):
                                                     "https://____.bandcamp.com/album/____")
         elif error == 3:
             QtGui.QMessageBox.about(self, "Continue?", "No links found for track:\n" +
-                                    str(self.invalid_tracks).replace("'", "").
+                                    str(self.camp_obj.album_data['invalid_tracks']).replace("'", "").
                                     replace("[", "").replace("]", ""))
 
     def clear_all(self):
@@ -78,7 +78,7 @@ class MainUiClass(QtGui.QMainWindow, bandloader_gui.Ui_MainWindow):
         :return:
         """
 
-        self.progress = prog / len(self.album['track_titles']) * 100
+        self.progress = prog / len(self.camp_obj.album_data['track_titles']) * 100
 
         if self.progress == 100:
             self.progress = 90
@@ -93,8 +93,8 @@ class MainUiClass(QtGui.QMainWindow, bandloader_gui.Ui_MainWindow):
         :return:
         """
         track = track_num - 1
-        self.progress_label.setText("Downloading track: " + self.album['track_titles'][track] + "\nThis takes a bit...")
-
+        self.progress_label.setText("Downloading track: " + self.camp_obj.album_data['track_titles'][track] +
+                                    "\nThis takes a bit...")
 
     def get_dir(self):
         """
@@ -128,24 +128,51 @@ class MainUiClass(QtGui.QMainWindow, bandloader_gui.Ui_MainWindow):
             self.display_error(error=2)
         else:
             self.toggle_buttons(False)
-            self.album, self.invalid_tracks = bandloader.collect_album_info(url)
 
-            if self.invalid_tracks:
+            # Create the bandcamp object
+            self.camp_obj = BandLoader(url, file_dir)
+
+            # Collect album information
+            self.camp_obj.collect_album_info()
+
+            if self.camp_obj.album_data['invalid_tracks']:
                 self.display_error(3)
 
-            self.final_dir = bandloader.create_dir(file_dir, self.album['title'])
-            self.d_thread = DownloadThread(album_data=self.album, directory=self.final_dir)
+            # Create directory
+            self.camp_obj.create_dir()
+
+            # Download album cover
+            self.download_album_cover()
+
+            # Create download thread object
+            self.d_thread = DownloadThread(album_data=self.camp_obj.album_data, directory=self.camp_obj.file_path)
+
+            # Connect some signals in order to get returns from thread
             self.connect(self.d_thread, QtCore.SIGNAL('PROGRESS'), self.update_progress_bar)
             self.connect(self.d_thread, QtCore.SIGNAL('PROGRESS'), self.show_track_downloading)
             self.connect(self.d_thread, QtCore.SIGNAL('THREAD DONE'), self.finish_up)
+
             # Start download thread
             self.d_thread.start()
 
             # Check to see if we have a url to download the album cover with
-            if not self.album['cover_url']:
+            if not self.camp_obj.album_data['cover_url']:
                 QtGui.QMessageBox.about(self, "Dang!", "No album cover found\n"
                                                        "Continuing...")
                 self.cover_url = -1
+
+    def download_album_cover(self):
+        """
+        Downloads the album cover
+
+        :return:
+        """
+        # Skip downloading cover URL if we don't have it
+        if self.cover_url == -1:
+            print("Cant download cover")
+        else:
+            self.progress_label.setText("Downloading album cover.")
+            self.camp_obj.download_album_cover()
 
     def finish_up(self):
         """
@@ -157,19 +184,12 @@ class MainUiClass(QtGui.QMainWindow, bandloader_gui.Ui_MainWindow):
         # Stop the thread
         self.d_thread.quit()
 
-        # Skip downloading cover URL if we don't have it
-        if self.cover_url == -1:
-            print("Cant download cover")
-        else:
-            self.progress_label.setText("Downloading album cover.")
-            self.album['cover'] = self.download_cover(self.album['cover_url'], self.final_dir)
-
         # Encode the mp3 files
         self.progress_label.setText("Encoding files...")
-        self.encode(self.album, self.final_dir)
+        self.camp_obj.encode_tracks()
 
         # Clean up files
-        bandloader.clean_up_files(self.final_dir)
+        self.camp_obj.clean_up_files()
 
         # Finish the progress bar
         self.progress_bar.setValue(100)
@@ -177,30 +197,15 @@ class MainUiClass(QtGui.QMainWindow, bandloader_gui.Ui_MainWindow):
                                               "Remember, please support the Artists")
         self.progress_label.setText("Done!")
         self.toggle_buttons(True)
-        bandloader.open_file_path(self.final_dir)
-
-    @staticmethod
-    def download_cover(cover_url, directory):
-        """
-        Downloads the album cover after downloading tracks
-        """
-        result = bandloader.download_album_cover(cover_url, directory)
-
-        return result
-
-    @staticmethod
-    def encode(album, directory):
-        """
-        Encodes the tracks using mutagen
-        """
-        bandloader.encode_tracks(album, directory)
+        self.camp_obj.open_file_path()
 
 
 class DownloadThread(QtCore.QThread):
 
     """
-    Threading for the download function inside of
-    bandloader.py
+    Threading for the download method inside of
+    the BandLoader class
+
 
     Without threading GUI locks up :(
 
@@ -218,8 +223,8 @@ class DownloadThread(QtCore.QThread):
         for track in self.album_info['track_info']:
             perc += 1
             self.emit(QtCore.SIGNAL('PROGRESS'), perc)
-            bandloader.download_tracks(track, self.album_info['track_titles'][i],
-                                                self.directory)
+            BandLoader.download_tracks(track, self.album_info['track_titles'][i],
+                                       self.directory)
 
             i += 1
 
