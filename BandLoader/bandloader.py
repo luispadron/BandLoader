@@ -163,6 +163,10 @@ class BandLoader(object):
         :return:
         """
         download_url = track_info['file']['mp3-128']
+
+        # Fix the URL, this is a new error I've been getting
+        # This just added https:// to the front of the URL
+        download_url = "https://" + download_url[2:]
         # downloads the mp3 from url, creates
         # a temporary file in the directory
         tmp_file = wgetter.download(download_url, outdir=directory)
@@ -185,7 +189,7 @@ class BandLoader(object):
         """
         print("\nDownloading album cover...\n")
         tmp_file = wgetter.download(self.__album_data['cover_url'], outdir=self.__file_path)
-        self.__album_data['cover'] = self.__file_path+ "\\" + "cover.jpg"
+        self.__album_data['cover'] = self.__file_path + "\\" + "cover.jpg"
         # if file already exists, we skip that file and delete the tmp_file
         if os.path.isfile(self.__album_data['cover']):
             os.remove(tmp_file)
@@ -241,10 +245,11 @@ class BandLoader(object):
         created
 
         """
-        file_list = [f for f in os.listdir(self.__directory) if f.endswith(".tmp")]
+        print("Cleaning up files")
+        file_list = [f for f in os.listdir(self.__file_path) if f.endswith(".tmp")]
 
         for file in file_list:
-            os.remove(self.__directory + "\\" + file)
+            os.remove(self.__file_path + "\\" + file)
 
     def open_file_path(self):
         """
@@ -253,6 +258,6 @@ class BandLoader(object):
 
         """
         if platform.system() == "Windows":
-            os.startfile(self.__directory)
+            os.startfile(self.__file_path)
         elif platform.system() == "Darwin":
             subprocess.Popen(["open", self.__file_path])
