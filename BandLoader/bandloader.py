@@ -145,10 +145,10 @@ class BandLoader(object):
 
         """
         self.__album_data['track_titles'] = []
-        valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
+        invalid_chars = "/\\:*\"?<>|"
         for track in self.__album_data['track_info']:
             valid_track_name = track['title']
-            track['title'] = ''.join(c for c in valid_track_name if c in valid_chars)
+            track['title'] = ''.join(c for c in valid_track_name if c not in invalid_chars)
             self.__album_data['track_titles'].append(track['title'])
 
     @staticmethod
