@@ -106,7 +106,7 @@ class BandLoader(object):
         tmp_site = urllib.request.urlopen(self.__url)
         site_source = tmp_site.read().decode('utf-8')
         tmp_site.close()
-        valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
+        invalid_chars = "/\\:*\"?<>|"
         self.__album_data['track_info'] = self.get_html_data('trackinfo', site_source, True)
         self.get_track_titles()
         num_of_tracks = len(self.__album_data['track_titles'])
@@ -129,9 +129,9 @@ class BandLoader(object):
             self.__album_data['track_titles'].remove('')
 
         self.__album_data['artist'] = self.get_html_data("artist", site_source).replace('"', '')
-        self.__album_data['artist'] = ''.join(c for c in self.__album_data['artist'] if c in valid_chars)
+        self.__album_data['artist'] = ''.join(c for c in self.__album_data['artist'] if c not in invalid_chars)
         self.__album_data['title'] = self.get_html_data("album_title", site_source).replace('"', '')
-        self.__album_data['title'] = ''.join(c for c in self.__album_data['title'] if c in valid_chars)
+        self.__album_data['title'] = ''.join(c for c in self.__album_data['title'] if c not in invalid_chars)
         self.__album_data['release_date'] = self.get_html_data("release_date", site_source).replace('"', '')
         self.__album_data['cover_url'] = self.get_html_data("artFullsizeUrl", site_source).replace('"', '')
         self.__album_data['release_date'] = self.fix_release_date(self.__album_data['release_date'])
