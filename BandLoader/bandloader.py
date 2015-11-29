@@ -81,7 +81,11 @@ class BandLoader(object):
         Create the directory for saving the downloaded files
 
         """
-        file_path = self.__directory + "\\" + self.__album_data['title'] + "\\"
+
+        if platform.system() == "Windows":
+            file_path = self.__directory + "\\" + self.__album_data['title'] + "\\"
+        elif platform.system() == "Darwin":
+            file_path = self.__directory + "/" + self.__album_data['title'] + "/"
 
         if not os.path.exists(file_path):
             os.makedirs(file_path)
@@ -171,7 +175,11 @@ class BandLoader(object):
         # a temporary file in the directory
         tmp_file = wgetter.download(download_url, outdir=directory)
         # create the file name with path and .mp3
-        file_name = directory + "\\" + track_title + ".mp3"
+        if platform.system() == "Windows":
+            file_name = directory + "\\" + track_title + ".mp3"
+        elif platform.system() == "Darwin":
+            file_name = directory + "/" + track_title + ".mp3"
+
         # if file already exists, we skip that file and delete the tmp_file
         if os.path.isfile(file_name):
             print("Skipping file: " + file_name + " already exists.")
@@ -189,7 +197,12 @@ class BandLoader(object):
         """
         print("\nDownloading album cover...\n")
         tmp_file = wgetter.download(self.__album_data['cover_url'], outdir=self.__file_path)
-        self.__album_data['cover'] = self.__file_path + "\\" + "cover.jpg"
+
+        if platform.system() == "Windows":
+            self.__album_data['cover'] = self.__file_path + "\\" + "cover.jpg"
+        elif platform.system() == "Darwin":
+            self.__album_data['cover'] = self.__file_path + "/" + "cover.jpg"
+
         # if file already exists, we skip that file and delete the tmp_file
         if os.path.isfile(self.__album_data['cover']):
             os.remove(tmp_file)
@@ -249,7 +262,10 @@ class BandLoader(object):
         file_list = [f for f in os.listdir(self.__file_path) if f.endswith(".tmp")]
 
         for file in file_list:
-            os.remove(self.__file_path + "\\" + file)
+            if platform.system() == "Windows":
+                os.remove(self.__file_path + "\\" + file)
+            elif platform.system() == "Darwin":
+                os.remove(self.__file_path + "/" + file)
 
     def open_file_path(self):
         """
