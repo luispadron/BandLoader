@@ -84,7 +84,7 @@ class BandLoader(object):
 
         if platform.system() == "Windows":
             file_path = self.__directory + "\\" + self.__album_data['title'] + "\\"
-        elif platform.system() == "Darwin":
+        else:
             file_path = self.__directory + "/" + self.__album_data['title'] + "/"
 
         if not os.path.exists(file_path):
@@ -177,7 +177,7 @@ class BandLoader(object):
         # create the file name with path and .mp3
         if platform.system() == "Windows":
             file_name = directory + "\\" + track_title + ".mp3"
-        elif platform.system() == "Darwin":
+        else:
             file_name = directory + "/" + track_title + ".mp3"
 
         # if file already exists, we skip that file and delete the tmp_file
@@ -200,7 +200,7 @@ class BandLoader(object):
 
         if platform.system() == "Windows":
             self.__album_data['cover'] = self.__file_path + "\\" + "cover.jpg"
-        elif platform.system() == "Darwin":
+        else:
             self.__album_data['cover'] = self.__file_path + "/" + "cover.jpg"
 
         # if file already exists, we skip that file and delete the tmp_file
@@ -264,7 +264,7 @@ class BandLoader(object):
         for file in file_list:
             if platform.system() == "Windows":
                 os.remove(self.__file_path + "\\" + file)
-            elif platform.system() == "Darwin":
+            else:
                 os.remove(self.__file_path + "/" + file)
 
     def open_file_path(self):
@@ -275,5 +275,3 @@ class BandLoader(object):
         """
         if platform.system() == "Windows":
             os.startfile(self.__file_path)
-        elif platform.system() == "Darwin":
-            subprocess.Popen(["open", self.__file_path])
