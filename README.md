@@ -20,7 +20,7 @@ A Python 3.4 based GUI application for downloading streaming files from Bandcamp
 ## Downloads
 
 #### Windwos
-- Download the Zip file [HERE](https://www.dropbox.com/s/7ek5w0zp5cgscpj/Band%20Loader.zip?dl=0)
+- Download the Zip file [HERE](https://www.dropbox.com/s/oqxvp9lcpxbclfi/Band%20Loader.rar?dl=0)
 - Unpack
 - Run BandLoader.exe
 - Enjoy
