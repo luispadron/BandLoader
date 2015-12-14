@@ -26,7 +26,10 @@ A Python 3.4 based GUI application for downloading streaming files from Bandcamp
 - Enjoy
 
 #### Mac OSX
-- DMG coming very soon
+- Download the .app file [HERE](https://www.dropbox.com/sh/i9zdesu8wrec57u/AADjO1N5fx5b5RhV7dCqALjoa?dl=0)
+- Drag the .app file into your applications folder (optional)
+- Run the Band Loader.app file
+- Enjoy
 
 #### Source
 - Grab the source
