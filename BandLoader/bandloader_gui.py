@@ -103,7 +103,7 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(_translate("MainWindow", "Band Loader", None))
         self.artist_label.setText(_translate("MainWindow", "SUPPORT THE ARTISTS", None))
-        self.dir_label.setText(_translate("MainWindow", "What directory to save to:", None))
+        self.dir_label.setText(_translate("MainWindow", "Directory:", None))
         self.dir_button.setText(_translate("MainWindow", "...", None))
         self.url_label.setText(_translate("MainWindow", "Bandcamp URL:", None))
         self.download_button.setText(_translate("MainWindow", "Download", None))

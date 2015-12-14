@@ -235,7 +235,6 @@ if __name__ == '__main__':
     a = QtGui.QApplication(sys.argv)
     app = MainUiClass()
     palette = QtGui.QPalette()
-    palette.setBrush(QtGui.QPalette.Background, QtGui.QBrush(QtGui.QPixmap("Assets/background.png")))
     app.setPalette(palette)
     app.show()
     a.exec()
